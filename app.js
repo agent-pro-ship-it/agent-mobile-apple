@@ -1,4 +1,4 @@
-// Configuration & State
+﻿// Configuration & State
 let SERVER_URL = localStorage.getItem("AGENT_SERVER_URL") || "https://agent-master-server.onrender.com";
 if (SERVER_URL.endsWith("/")) SERVER_URL = SERVER_URL.slice(0, -1);
 
@@ -14,12 +14,14 @@ const waveform = document.getElementById("waveform");
 const statusDot = document.getElementById("statusDot");
 
 // Modals
+const modalAccount = document.getElementById("modalAccount");
+const modalSkills = document.getElementById("modalSkills");
 const modalStorage = document.getElementById("modalStorage");
 const modalSettings = document.getElementById("modalSettings");
 
-// Register PWA Service Worker
+// Register PWA Service Worker with relative path
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js").catch(() => {});
+  navigator.serviceWorker.register("./sw.js").catch(() => {});
 }
 
 // Check Backend Connection & Status
@@ -29,16 +31,17 @@ async function checkHealth() {
     if (res.ok) {
       const data = await res.json();
       statusDot.style.background = "#30d158";
-      statusDot.title = `Исполнитель онлайн: RAM ${data.system?.ram_used_mb}MB, Storj 25GB: ${data.storage?.storj_connected ? 'Подключен' : 'Ожидание'}`;
+      statusDot.style.boxShadow = "0 0 8px rgba(48, 209, 88, 0.6)";
+      statusDot.title = `Сервер онлайн: RAM ${data.system?.ram_used_mb}MB / ${data.system?.ram_total_mb}MB | Storj 25GB: ${data.storage?.storj_connected ? 'Подключен' : 'Ожидание'}`;
     } else {
       statusDot.style.background = "#ff9f0a";
     }
   } catch (e) {
     statusDot.style.background = "#ff453a";
-    statusDot.title = "Сервер просыпается или оффлайн...";
+    statusDot.title = "Сервер на связи или просыпается...";
   }
 }
-setInterval(checkHealth, 20000);
+setInterval(checkHealth, 15000);
 checkHealth();
 
 // Append message to UI
@@ -75,7 +78,7 @@ async function sendTask() {
   appendMessage("user", text);
   messageInput.value = "";
 
-  const assistantBubble = appendMessage("assistant", "Исполняю задачу на сервере Render...");
+  const assistantBubble = appendMessage("assistant", "Исполняю задачу на сервере Render (Gemini 3.8)...");
 
   try {
     const res = await fetch(`${SERVER_URL}/api/task`, {
@@ -116,7 +119,7 @@ async function sendTask() {
     chatContainer.scrollTop = chatContainer.scrollHeight;
 
   } catch (err) {
-    assistantBubble.innerText = "Не удалось подключиться к серверу Render. Он просыпается, попробуйте через минуту.";
+    assistantBubble.innerText = "Не удалось подключиться к серверу Render. Проверьте интернет или повторите запрос.";
   }
 }
 
@@ -171,7 +174,7 @@ if (SpeechRecognition) {
   });
 } else {
   btnMic.style.opacity = "0.4";
-  btnMic.title = "Голосовой ввод не поддерживается";
+  btnMic.title = "Голосовой ввод не поддерживается браузером";
 }
 
 // Modal Handlers
@@ -187,10 +190,47 @@ function setupModal(triggerId, modalEl, onOpen) {
   });
 }
 
+// Google Account Modal
+setupModal("btnGoogleAuth", modalAccount, () => {
+  const accList = document.getElementById("accountsList");
+  if (!accList) return;
+  accList.innerHTML = `
+    <div class="apple-pill" style="display:flex; justify-content:space-between; align-items:center; background:rgba(48,209,88,0.15); border:1px solid rgba(48,209,88,0.4);">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="width:8px; height:8px; border-radius:50%; background:#30d158;"></span>
+        <span style="font-weight:600;">Google Pro / Gemini 3.8</span>
+      </div>
+      <span style="font-size:12px; color:#30d158;">Активен</span>
+    </div>
+  `;
+});
+
+// Skills Modal
+setupModal("btnSkillsModal", modalSkills, () => {
+  const skillsList = document.getElementById("skillsList");
+  if (!skillsList) return;
+  const skills = [
+    { icon: "⚡", name: "Gemini 3.8 / 3.6 Engine", desc: "Генерация и планирование кода" },
+    { icon: "💻", name: "Linux Bash Terminal", desc: "Выполнение скриптов на сервере 24/7" },
+    { icon: "☁️", name: "Storj S3 Sync (25GB)", desc: "Авто-сохранение файлов в защищенное облако" },
+    { icon: "🔄", name: "GitHub Robot Keepalive", desc: "Защита сервера от сна каждые 10 мин" }
+  ];
+  skillsList.innerHTML = skills.map(s => `
+    <div class="apple-pill" style="display:flex; flex-direction:column; align-items:flex-start; gap:4px; padding:12px;">
+      <div style="font-weight:600; display:flex; align-items:center; gap:6px;">
+        <span>${s.icon}</span>
+        <span>${s.name}</span>
+      </div>
+      <span style="font-size:12px; color:var(--text-secondary);">${s.desc}</span>
+    </div>
+  `).join("");
+});
+
 // Storage Modal
 setupModal("btnStorageModal", modalStorage, async () => {
   const listEl = document.getElementById("storageFilesList");
-  listEl.innerHTML = "Загрузка файлов из Storj 25GB...";
+  if (!listEl) return;
+  listEl.innerHTML = "<div style='opacity:0.6; font-size:13px;'>Загрузка файлов из облака...</div>";
   try {
     const res = await fetch(`${SERVER_URL}/api/files`);
     const data = await res.json();
@@ -202,6 +242,18 @@ setupModal("btnStorageModal", modalStorage, async () => {
       listEl.innerHTML = "<div style='opacity:0.6; font-size:13px;'>Файлы пока отсутствуют. Дайте агенту задачу создать проект!</div>";
       return;
     }
+
+    local.forEach(f => {
+      const item = document.createElement("div");
+      item.className = "apple-pill";
+      item.style.display = "flex";
+      item.style.justifyContent = "space-between";
+      item.innerHTML = `
+        <span>📄 ${f.name}</span>
+        <span style="opacity:0.6; font-size:11px;">${f.size} B (Сервер)</span>
+      `;
+      listEl.appendChild(item);
+    });
 
     cloud.forEach(f => {
       const item = document.createElement("div");
@@ -215,34 +267,27 @@ setupModal("btnStorageModal", modalStorage, async () => {
       listEl.appendChild(item);
     });
 
-    local.forEach(f => {
-      const item = document.createElement("div");
-      item.className = "apple-pill";
-      item.style.display = "flex";
-      item.style.justifyContent = "space-between";
-      item.innerHTML = `
-        <span>📄 ${f.name}</span>
-        <span style="opacity:0.6; font-size:11px;">Workspace</span>
-      `;
-      listEl.appendChild(item);
-    });
-
   } catch (e) {
-    listEl.innerHTML = "Ошибка загрузки файлов.";
+    listEl.innerHTML = "<div style='color:var(--apple-red); font-size:13px;'>Не удалось загрузить список файлов.</div>";
   }
 });
 
 // Settings Modal
 setupModal("btnSettingsModal", modalSettings, () => {
-  document.getElementById("serverUrlInput").value = SERVER_URL;
+  const input = document.getElementById("serverUrlInput");
+  if (input) input.value = SERVER_URL;
 });
 
-document.getElementById("btnSaveServerUrl").addEventListener("click", () => {
-  const url = document.getElementById("serverUrlInput").value.trim();
-  if (url) {
-    localStorage.setItem("AGENT_SERVER_URL", url);
-    SERVER_URL = url;
-    modalSettings.classList.remove("open");
-    checkHealth();
-  }
-});
+const btnSaveUrl = document.getElementById("btnSaveServerUrl");
+if (btnSaveUrl) {
+  btnSaveUrl.addEventListener("click", () => {
+    const input = document.getElementById("serverUrlInput");
+    const url = input ? input.value.trim() : "";
+    if (url) {
+      localStorage.setItem("AGENT_SERVER_URL", url);
+      SERVER_URL = url;
+      if (modalSettings) modalSettings.classList.remove("open");
+      checkHealth();
+    }
+  });
+}
