@@ -1,6 +1,6 @@
 // Configuration & State
-let SERVER_URL = localStorage.getItem(AGENT_SERVER_URL) || window.location.origin;
-if (SERVER_URL.endsWith(/)) SERVER_URL = SERVER_URL.slice(0, -1);
+let SERVER_URL = localStorage.getItem("AGENT_SERVER_URL") || "https://agent-master-server.onrender.com";
+if (SERVER_URL.endsWith("/")) SERVER_URL = SERVER_URL.slice(0, -1);
 
 let chatHistory = [];
 let isRecording = false;
