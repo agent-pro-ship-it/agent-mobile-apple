@@ -107,8 +107,8 @@ async function fetchProjects() {
   };
   if (projects && projects.length > 0) {
     projects.forEach(p => {
-      if (!p.name || p.name.includes("") || p.name.trim() === "?") {
-        if (fallbackNames[p.id]) p.name = fallbackNames[p.id];
+      if (fallbackNames[p.id] && (!p.name || p.name.includes("\ufffd") || p.name.includes("?") || p.name.length <= 1)) {
+        p.name = fallbackNames[p.id];
       }
     });
   }
