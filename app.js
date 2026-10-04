@@ -1394,8 +1394,6 @@ const browserAgentOverlay = document.getElementById("browserAgentOverlay");
 const browserAgentText = document.getElementById("browserAgentText");
 const btnBrowserBack = document.getElementById("btnBrowserBack");
 const btnBrowserForward = document.getElementById("btnBrowserForward");
-const btnBrowserReload = document.getElementById("btnBrowserReload");
-const btnBrowserExternal = document.getElementById("btnBrowserExternal");
 
 function openBrowserModal(rawUrl = null) {
   if (modalBrowser) {
