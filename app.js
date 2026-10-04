@@ -94,6 +94,25 @@ async function fetchProjects() {
     console.warn("Could not fetch remote projects, using cache:", e);
   }
 
+  const fallbackNames = {
+    "agent": "Агент",
+    "recruiter-club": "сайт Recruiter I Club",
+    "resume-optimizer": "парсер и резюме",
+    "online-crm": "проект онлайн срм",
+    "doc-automation": "прога для договор...",
+    "recruiter-project": "Recruiter проект",
+    "site-landing": "сайт",
+    "telegram-bot": "telegram bot",
+    "crm-debug": "отладка срм антиг..."
+  };
+  if (projects && projects.length > 0) {
+    projects.forEach(p => {
+      if (!p.name || p.name.includes("") || p.name.trim() === "?") {
+        if (fallbackNames[p.id]) p.name = fallbackNames[p.id];
+      }
+    });
+  }
+
   if (!projects || projects.length === 0) {
     projects = [
       { id: "agent", name: "Агент", task: "Бесплатный Сервер Для Антигравити", time: "2m", active: true },
